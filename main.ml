@@ -17,7 +17,7 @@
 
 open Readcsv
 
-type mode = Gen | Whohas of string
+type mode = Gen | Whohas of (string * string option) list
 
 let mode = ref Gen
 let csv = ref ""
@@ -31,6 +31,18 @@ let debug = ref false
 let log = ref false
 
 open Arg
+
+let addwhohas s =
+  let entry =
+    match String.split_on_char '/' s with
+    | [v] -> (v, None)
+    | [v; a] -> (v, Some a)
+    | _ -> raise (Bad "--whohas arguments should have the form <variant> or <variant/number>")
+  in
+  match !mode with
+  | Gen -> mode := Whohas [entry]
+  | Whohas l -> mode := Whohas (entry::l)
+   
 let _ = parse
           [("-s", Set_string csv, "CSV file with class list");
            ("--students", Set_string csv, "CSV file with class list");
@@ -40,11 +52,9 @@ let _ = parse
             "Generation is deterministic based on hash of student ID and input file name");
            ("-ta", Set_string detstring,
             "Additional string to use in hash for random seed");
-           ("-w", String (fun s ->
-                      mode := Whohas s),
+           ("-w", String addwhohas,
             "Do not generate files but output which students have the specified variant.");
-           ("--whohas", String (fun s ->
-                      mode := Whohas s),
+           ("--whohas", String addwhohas,
             "Do not generate files but output which students have the specified variant.");
              ("-b", Set_string outdir, "Output base directory");
              ("--basedir", Set_string outdir, "Output base directory");
@@ -118,7 +128,7 @@ let _ = if (not !det) && (not !detfile) && (String.length !detstring = 0)
   
 let _ =
   match !mode with
-  | Whohas s ->
+  | Whohas vars ->
      if !csv = "" then
        (Printf.printf "-s or --students option is required for -whohas.\n";
         exit 1)
@@ -130,10 +140,19 @@ let _ =
            let _ = setseed st.id inbase
            in
            let sitems = Gen.gen items in
-           match has s sitems with
+           let f s (v, a) =
+             match (s, has v sitems, a) with
+             | (Some prevs, Some q, Some q') ->
+                if q' = (Gen.print_q q) then Some (q'::prevs)
+                else None
+             | (Some prevs, Some q, None) ->
+                Some ((Gen.print_q q)::prevs)
+             | _ -> None
+           in
+           match List.fold_left f (Some []) vars with
            | Some q ->
               Printf.printf "%s\t%s\t%s\t%s\n" st.last st.first st.id
-                (Gen.print_q q)
+                (String.concat ", " q)
            | None ->
              ())
          students

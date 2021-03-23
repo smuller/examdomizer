@@ -121,7 +121,7 @@ Examdomizer has 3 main modes of operation:
 * Generate one random exam from a template
 * Take a class list in .csv form and generate an exam for each student. The output files are
   placed in a directory named with the student ID.
-* Do not generate any exams, but output which students have a given variant on their exam.
+* Do not generate any exams, but output which students have a given variant(s) on their exam.
 
 ### Randomization
 
@@ -160,12 +160,18 @@ the filename, and flag `-ta` allows the user to specify an additional string to 
 
     -w <variant name>
     --whohas <variant name>
+    -w <variant name>/<question number>
+    --whohas <variant name>/<question number>
 
 Operate in "whohas" mode: rather than generate exams, Examdomizer will output a list of
 students who would receive the specified variant (the variant must be given a unique ID as
 specified above). It will also specify, for each student, the question number under which this
-variant appears, if the variant is in a numbered question. It makes the most sense to use this
+variant appears, if the variant is in a numbered question. 
+If a question number is provided after a slash (e.g. "var1/2a"), it will
+only include students for whom the variant "var1" appears as question "2a".
+It makes the most sense to use this
 when generation is deterministic, using one or more of the flags above.
+This option can be used multiple times to output only students matching *all* of the conditions.
 
     -b <directory>
     --basedir <directory>

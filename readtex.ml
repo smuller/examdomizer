@@ -116,7 +116,11 @@ and readlines_vs vars ls n invar varname =
            | Some l -> if SSet.mem l !labels then
                          raise (SyntaxError (Some n', "duplicate label " ^ l))
                        else
-                         labels := SSet.add l !labels
+                         if (String.contains l ' ') || (String.contains l '/')
+                         then
+                           raise (SyntaxError (Some n', "invalid label " ^ l))
+                         else
+                           labels := SSet.add l !labels
            | None -> ()
          in
          readlines_vs vars' t n' true vn
